@@ -94,6 +94,11 @@ void IconButton::setTheme(const QString &themeName) {
     update();
 }
 
+void IconButton::setType(IconType type) {
+    m_type = type;
+    update();
+}
+
 void IconButton::enterEvent(QEnterEvent *event) {
     Q_UNUSED(event);
     m_hovered = true;
@@ -369,12 +374,21 @@ void TaskItemWidget::applyTheme(const QString &themeName) {
     ).arg(colors.card, colors.accent, colors.fg, colors.bg));
 }
 
+void TaskItemWidget::setTimerState(bool isActive, bool isPaused) {
+    if (!m_btnPlay->isVisible()) return;
+    if (isActive) {
+        m_btnPlay->setType(isPaused ? IconButton::Play : IconButton::Pause);
+    } else {
+        m_btnPlay->setType(IconButton::Play);
+    }
+}
+
 // --- FocusTimerWidget ---
 FocusTimerWidget::FocusTimerWidget(const QString &taskName, int durationSeconds, int alertIntervalMins, const QString &themeName, QWidget *parent)
     : QWidget(parent), m_taskName(taskName), m_duration(durationSeconds), m_timeLeft(durationSeconds),
       m_alertInterval(alertIntervalMins), m_themeName(themeName) {
 
-    setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::SubWindow);
+    setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool);
     setAttribute(Qt::WA_TranslucentBackground);
     setFixedSize(220, 290);
 
@@ -453,6 +467,7 @@ void FocusTimerWidget::adjustTime(int deltaSecs) {
 void FocusTimerWidget::togglePause() {
     m_isPaused = !m_isPaused;
     m_btnPause->setText(m_isPaused ? "Resume" : "Pause");
+    emit pauseToggled(m_isPaused);
 }
 
 void FocusTimerWidget::onTick() {
@@ -1315,7 +1330,7 @@ void MainWindow::initUI() {
     connect(m_btnAnalytics, &QPushButton::clicked, this, &MainWindow::openAnalytics);
 
     m_btnMinimize = new IconButton(IconButton::Minimize, m_themeName, m_outerFrame);
-    connect(m_btnMinimize, &QPushButton::clicked, this, &QWidget::hide);
+    connect(m_btnMinimize, &QPushButton::clicked, this, &QWidget::showMinimized);
 
     m_btnClose = new IconButton(IconButton::Close, m_themeName, m_outerFrame);
     connect(m_btnClose, &QPushButton::clicked, this, [this]() {
@@ -1559,8 +1574,19 @@ private:
 };
 
 void MainWindow::onStartTimer(int index) {
+    if (m_activeTimer && m_activeTimerIndex == index) {
+        m_activeTimer->togglePause();
+        return;
+    }
+
     if (m_activeTimer) {
         m_activeTimer->close();
+        if (m_activeTimerIndex >= 0 && m_activeTimerIndex < m_listWidget->count()) {
+            QListWidgetItem *oldItem = m_listWidget->item(m_activeTimerIndex);
+            if (TaskItemWidget *w = qobject_cast<TaskItemWidget*>(m_listWidget->itemWidget(oldItem))) {
+                w->setTimerState(false, false);
+            }
+        }
     }
 
     QString taskText = m_tasksDict.profiles[m_selectedProfile][index];
@@ -1572,11 +1598,29 @@ void MainWindow::onStartTimer(int index) {
     }
     int intervalMins = dlg.value();
 
+    m_activeTimerIndex = index;
     m_activeTimer = new FocusTimerWidget(taskText, secs, intervalMins, m_themeName);
     connect(m_activeTimer, &FocusTimerWidget::timerFinished, this, &MainWindow::onTimerFinished);
+    connect(m_activeTimer, &FocusTimerWidget::pauseToggled, this, &MainWindow::onTimerPauseToggled);
+    
+    if (index >= 0 && index < m_listWidget->count()) {
+        QListWidgetItem *item = m_listWidget->item(index);
+        if (TaskItemWidget *w = qobject_cast<TaskItemWidget*>(m_listWidget->itemWidget(item))) {
+            w->setTimerState(true, false);
+        }
+    }
     
     m_activeTimer->move(x() + width() + 10, y());
     m_activeTimer->show();
+}
+
+void MainWindow::onTimerPauseToggled(bool isPaused) {
+    if (m_activeTimerIndex >= 0 && m_activeTimerIndex < m_listWidget->count()) {
+        QListWidgetItem *item = m_listWidget->item(m_activeTimerIndex);
+        if (TaskItemWidget *w = qobject_cast<TaskItemWidget*>(m_listWidget->itemWidget(item))) {
+            w->setTimerState(true, isPaused);
+        }
+    }
 }
 
 void MainWindow::onTimerFinished() {
@@ -1584,8 +1628,22 @@ void MainWindow::onTimerFinished() {
         m_activeTimer->close();
         m_activeTimer = nullptr;
     }
+    
+    if (m_activeTimerIndex >= 0 && m_activeTimerIndex < m_listWidget->count()) {
+        QListWidgetItem *item = m_listWidget->item(m_activeTimerIndex);
+        if (TaskItemWidget *w = qobject_cast<TaskItemWidget*>(m_listWidget->itemWidget(item))) {
+            w->setTimerState(false, false);
+        }
+    }
+    m_activeTimerIndex = -1;
 
+    QApplication::beep();
     playWavSound("chime.wav");
+    
+    show();
+    raise();
+    activateWindow();
+    QMessageBox::information(this, "Focus Complete", "The selected time has ended.");
 
     for (int i = 0; i < m_state.completed.size(); ++i) {
         if (!m_state.completed[i]) {
@@ -1667,6 +1725,13 @@ void MainWindow::saveWidgetState() {
     m_state.windowY = y();
     m_state.profileStates[m_selectedProfile] = m_state.completed;
     Storage::saveState(m_state);
+
+    int total = m_state.completed.size();
+    int completed = 0;
+    for (bool val : m_state.completed) {
+        if (val) completed++;
+    }
+    Storage::appendToLog(m_state.currentDate, completed, total, m_state.streak);
 }
 
 void MainWindow::mousePressEvent(QMouseEvent *event) {

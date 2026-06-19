@@ -38,6 +38,7 @@ public:
     enum IconType { Settings, Analytics, Play, Pause, Trash, Close, Plus, Minus, Check, Add5, Sub5, Minimize };
     explicit IconButton(IconType type, const QString &themeName, QWidget *parent = nullptr);
     void setTheme(const QString &themeName);
+    void setType(IconType type);
 protected:
     void paintEvent(QPaintEvent *event) override;
     void enterEvent(QEnterEvent *event) override;
@@ -69,6 +70,7 @@ class TaskItemWidget : public QWidget {
 public:
     explicit TaskItemWidget(int index, const QString &text, bool completed, const QString &themeName, QWidget *parent = nullptr);
     void applyTheme(const QString &themeName);
+    void setTimerState(bool isActive, bool isPaused);
 
 signals:
     void taskToggled(int index, bool checked);
@@ -100,9 +102,14 @@ class FocusTimerWidget : public QWidget {
 public:
     explicit FocusTimerWidget(const QString &taskName, int durationSeconds, int alertIntervalMins = 5, const QString &themeName = "catppuccin", QWidget *parent = nullptr);
     void setTheme(const QString &themeName);
+    bool isPaused() const { return m_isPaused; }
 
 signals:
     void timerFinished();
+    void pauseToggled(bool isPaused);
+
+public slots:
+    void togglePause();
 
 protected:
     void paintEvent(QPaintEvent *event) override;
@@ -111,7 +118,6 @@ protected:
 
 private slots:
     void onTick();
-    void togglePause();
     void adjustTime(int deltaSecs);
 
 private:
@@ -256,6 +262,7 @@ private slots:
     void onTaskDeleted(int index);
     void onStartTimer(int index);
     void onTimerFinished();
+    void onTimerPauseToggled(bool isPaused);
     void resetDay();
 
 private:
@@ -270,6 +277,7 @@ private:
 
     QPoint m_dragPos;
     FocusTimerWidget *m_activeTimer = nullptr;
+    int m_activeTimerIndex = -1;
 
     QFrame *m_outerFrame;
     QLabel *m_lblGreeting;
