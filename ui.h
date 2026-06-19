@@ -31,6 +31,38 @@ protected:
     void mouseDoubleClickEvent(QMouseEvent *event) override;
 };
 
+// Premium Vector IconButton
+class IconButton : public QPushButton {
+    Q_OBJECT
+public:
+    enum IconType { Settings, Analytics, Play, Pause, Trash, Close, Plus, Minus, Check, Add5, Sub5, Minimize };
+    explicit IconButton(IconType type, const QString &themeName, QWidget *parent = nullptr);
+    void setTheme(const QString &themeName);
+protected:
+    void paintEvent(QPaintEvent *event) override;
+    void enterEvent(QEnterEvent *event) override;
+    void leaveEvent(QEvent *event) override;
+private:
+    IconType m_type;
+    QString m_themeName;
+    bool m_hovered = false;
+};
+
+// Premium Custom Checkbox
+class CustomCheckBox : public QAbstractButton {
+    Q_OBJECT
+public:
+    explicit CustomCheckBox(const QString &themeName, QWidget *parent = nullptr);
+    void setTheme(const QString &themeName);
+protected:
+    void paintEvent(QPaintEvent *event) override;
+    void enterEvent(QEnterEvent *event) override;
+    void leaveEvent(QEvent *event) override;
+private:
+    QString m_themeName;
+    bool m_hovered = false;
+};
+
 // Task item row widget
 class TaskItemWidget : public QWidget {
     Q_OBJECT
@@ -54,11 +86,12 @@ private:
     QString m_text;
     QString m_themeName;
 
-    QCheckBox *m_chkDone;
+    CustomCheckBox *m_chkDone;
     EditableLabel *m_lblText;
     QLineEdit *m_lineEdit;
-    QPushButton *m_btnPlay;
-    QPushButton *m_btnDelete;
+    IconButton *m_btnPlay;
+    IconButton *m_btnDelete;
+    QFrame *m_cardFrame;
 };
 
 // Focus countdown circular timer overlay
@@ -100,15 +133,15 @@ private:
     QWidget *m_circleProgress;
     QPushButton *m_btnPause;
     QPushButton *m_btnCancel;
-    QPushButton *m_btnAdd5;
-    QPushButton *m_btnSub5;
+    IconButton *m_btnAdd5;
+    IconButton *m_btnSub5;
 };
 
 // Stacked onboarding wizard
 class OnboardingDialog : public QDialog {
     Q_OBJECT
 public:
-    explicit OnboardingDialog(Storage::AppState &state, const QString &themeName = "catppuccin", QWidget *parent = nullptr);
+    explicit OnboardingDialog(Storage::AppState &state, Storage::TasksConfig &tasksDict, const QString &themeName = "catppuccin", QWidget *parent = nullptr);
 
 signals:
     void themeChanged(const QString &newTheme);
@@ -117,16 +150,20 @@ private slots:
     void nextPage();
     void prevPage();
     void onThemeSelected(const QString &theme);
+    void addOnboardTask();
+    void removeOnboardTask();
 
 private:
     void initUI();
     void applyThemeStyles();
     QWidget* createSlide1();
     QWidget* createSlide2();
-    QWidget* createSlide3();
-    QWidget* createSlide4();
+    QWidget* createSlide3TaskBuilder();
+    QWidget* createSlide4Guide();
+    QWidget* createSlide5AllSet();
 
     Storage::AppState &m_state;
+    Storage::TasksConfig &m_tasksDict;
     QString m_themeName;
     int m_currentSlide = 0;
 
@@ -138,7 +175,13 @@ private:
     // Slide 2 Inputs
     QLineEdit *m_txtUserName;
     QComboBox *m_cmbTheme;
-    QSpinBox *m_spnAlert;
+    QSpinBox *m_spnAge;
+    QLineEdit *m_txtFocusGoal;
+
+    // Slide 3 Inputs
+    QListWidget *m_lstTasks;
+    QLineEdit *m_txtTaskInput;
+    IconButton *m_btnAddTask;
 };
 
 // Main settings dialogues panel
@@ -193,12 +236,19 @@ public:
     explicit MainWindow(Storage::AppState &state, Storage::TasksConfig &tasksDict, QWidget *parent = nullptr);
     ~MainWindow();
 
+    void buildTaskItems();
+    void openSettings();
+    void openAnalytics();
+    void showResetBanner(const QString &message);
+    void saveWidgetState();
+
 protected:
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
+    bool nativeEvent(const QByteArray &eventType, void *message, qintptr *result) override;
+    void resizeEvent(QResizeEvent *event) override;
 
 private slots:
-    void buildTaskItems();
     void updateProgress(bool animate = true);
     void onProfileSwitched(const QString &profileName);
     void onTaskToggled(int index, bool checked);
@@ -206,11 +256,7 @@ private slots:
     void onTaskDeleted(int index);
     void onStartTimer(int index);
     void onTimerFinished();
-    void openSettings();
-    void openAnalytics();
-    void showResetBanner(const QString &message);
     void resetDay();
-    void saveWidgetState();
 
 private:
     void initUI();
@@ -228,8 +274,10 @@ private:
     QFrame *m_outerFrame;
     QLabel *m_lblGreeting;
     QComboBox *m_cmbProfile;
-    QPushButton *m_btnSettings;
-    QPushButton *m_btnAnalytics;
+    IconButton *m_btnSettings;
+    IconButton *m_btnAnalytics;
+    IconButton *m_btnMinimize;
+    IconButton *m_btnClose;
     QListWidget *m_listWidget;
     
     // Progress bar

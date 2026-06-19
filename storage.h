@@ -38,6 +38,8 @@ namespace Storage {
         int customAlertMinutes = 5;
         bool onboarded = false;
         QString userName = "Friend";
+        int userAge = 25;
+        QString focusGoal = "Productivity";
         QMap<QString, QList<bool>> profileStates;
     };
 

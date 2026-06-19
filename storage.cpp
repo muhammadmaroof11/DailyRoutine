@@ -1,12 +1,17 @@
 #include "storage.h"
 #include <QTextStream>
 #include <QDebug>
+#include <QCoreApplication>
 
 namespace Storage {
 
 QString getPath(const QString &filename) {
-    // Return path relative to the app directory (for portable execution next to the executable)
-    return QDir::current().absoluteFilePath(filename);
+    QString dirPath = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
+    QDir dir(dirPath);
+    if (!dir.exists()) {
+        dir.mkpath(".");
+    }
+    return dir.absoluteFilePath(filename);
 }
 
 TasksConfig loadTasks() {
@@ -56,7 +61,7 @@ TasksConfig loadTasks() {
             config.selectedProfile = "Daily Habits";
             QList<QString> list;
             QJsonArray arr = obj["tasks"].toArray();
-            if (arr.isEmpty() && obj.isArray()) {
+            if (arr.isEmpty() && doc.isArray()) {
                 // Was it a raw array?
                 arr = doc.array();
             }
@@ -133,6 +138,8 @@ AppState loadState(const TasksConfig &tasksConfig) {
         state.customAlertMinutes = obj["custom_alert_minutes"].toInt(5);
         state.onboarded = obj["onboarded"].toBool(false);
         state.userName = obj["user_name"].toString("Friend");
+        state.userAge = obj["user_age"].toInt(25);
+        state.focusGoal = obj["focus_goal"].toString("Productivity");
 
         // Parse profile_states map
         QJsonObject statesObj = obj["profile_states"].toObject();
@@ -178,6 +185,8 @@ void saveState(const AppState &state) {
     root["custom_alert_minutes"] = state.customAlertMinutes;
     root["onboarded"] = state.onboarded;
     root["user_name"] = state.userName;
+    root["user_age"] = state.userAge;
+    root["focus_goal"] = state.focusGoal;
 
     QJsonArray compArr;
     for (bool val : state.completed) {

@@ -21,6 +21,8 @@ add_executable(DailyRoutineDashboard
     ui.cpp
     analytics.h
     analytics.cpp
+    resources.qrc
+    app.rc
 )
 
 target_link_libraries(DailyRoutineDashboard PRIVATE

@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
 
     // 4. Initialize onboarding deck if user is new
     if (!state.onboarded) {
-        OnboardingDialog wizard(state, state.themeSelection);
+        OnboardingDialog wizard(state, tasksDict, state.themeSelection);
         if (wizard.exec() != QDialog::Accepted) {
             return 0; // Terminate if user aborted onboarding
         }

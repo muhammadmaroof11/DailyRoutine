@@ -220,8 +220,8 @@ void HeatmapWidget::paintEvent(QPaintEvent *event) {
 AnalyticsDialog::AnalyticsDialog(const QString &themeName, int currentStreak, int longestStreak, QWidget *parent)
     : QDialog(parent), m_themeName(themeName), m_currentStreak(currentStreak), m_longestStreak(longestStreak) {
     
-    setWindowFlags(Qt::WindowType.FramelessWindowHint | Qt.WindowType.Dialog);
-    setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground);
+    setWindowFlags(Qt::FramelessWindowHint | Qt::Dialog);
+    setAttribute(Qt::WA_TranslucentBackground);
     setFixedSize(300, 390);
 
     // Main frame wrapper
@@ -245,8 +245,8 @@ AnalyticsDialog::AnalyticsDialog(const QString &themeName, int currentStreak, in
 
     // Title label
     m_lblTitle = new QLabel("WEEKLY STATISTICS", m_outerFrame);
-    m_lblTitle->setFont(QFont("Segoe UI", 11, QFont::Weight.Bold));
-    m_lblTitle->setAlignment(Qt::AlignmentFlag::AlignCenter);
+    m_lblTitle->setFont(QFont("Segoe UI", 11, QFont::Bold));
+    m_lblTitle->setAlignment(Qt::AlignCenter);
     innerLayout->addWidget(m_lblTitle);
 
     // Streaks summary card
@@ -256,12 +256,12 @@ AnalyticsDialog::AnalyticsDialog(const QString &themeName, int currentStreak, in
     streakLay->setContentsMargins(8, 8, 8, 8);
 
     m_lblCurrentStreak = new QLabel(QString("🔥 Current: %1").arg(m_currentStreak), streakCard);
-    m_lblCurrentStreak->setFont(QFont("Segoe UI", 9, QFont.Weight.Bold));
-    m_lblCurrentStreak->setAlignment(Qt::AlignmentFlag::AlignCenter);
+    m_lblCurrentStreak->setFont(QFont("Segoe UI", 9, QFont::Bold));
+    m_lblCurrentStreak->setAlignment(Qt::AlignCenter);
 
     m_lblLongestStreak = new QLabel(QString("🏆 Best: %1").arg(m_longestStreak), streakCard);
-    m_lblLongestStreak->setFont(QFont("Segoe UI", 9, QFont.Weight.Bold));
-    m_lblLongestStreak->setAlignment(Qt::AlignmentFlag::AlignCenter);
+    m_lblLongestStreak->setFont(QFont("Segoe UI", 9, QFont::Bold));
+    m_lblLongestStreak->setAlignment(Qt::AlignCenter);
 
     streakLay->addWidget(m_lblCurrentStreak);
     streakLay->addWidget(m_lblLongestStreak);
@@ -273,8 +273,8 @@ AnalyticsDialog::AnalyticsDialog(const QString &themeName, int currentStreak, in
 
     // Section title
     QLabel *heatmapTitle = new QLabel("Consistency (30 Days)", m_outerFrame);
-    heatmapTitle->setFont(QFont("Segoe UI", 9, QFont.Weight.Bold));
-    heatmapTitle->setAlignment(Qt::AlignmentFlag::AlignCenter);
+    heatmapTitle->setFont(QFont("Segoe UI", 9, QFont::Bold));
+    heatmapTitle->setAlignment(Qt::AlignCenter);
     innerLayout->addWidget(heatmapTitle);
 
     // Heatmap component
@@ -285,7 +285,7 @@ AnalyticsDialog::AnalyticsDialog(const QString &themeName, int currentStreak, in
 
     // Footer actions
     m_btnClose = new QPushButton("Close", m_outerFrame);
-    m_btnClose->setCursor(Qt::CursorShape.PointingHandCursor);
+    m_btnClose->setCursor(Qt::PointingHandCursor);
     connect(m_btnClose, &QPushButton::clicked, this, &QDialog::accept);
     innerLayout->addWidget(m_btnClose);
 
